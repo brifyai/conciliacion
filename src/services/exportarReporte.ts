@@ -17,7 +17,7 @@ function detalleCodigo(t: Transaccion, codigos: Codigo[]): string {
 }
 
 /** Exporta un informe en Excel con resumen, no conciliadas y reglas. */
-export async function exportarExcel({ transacciones, codigos }: DatosReporte): Promise<void> {
+export async function exportarExcel({ transacciones, codigos }: DatosReporte): Promise<Blob> {
   const kpis = calcularKpis(transacciones)
   const noConciliadas = transacciones.filter((t) => t.estado !== 'conciliada')
   const { default: ExcelJSRuntime } = await import('exceljs')
@@ -64,10 +64,9 @@ export async function exportarExcel({ transacciones, codigos }: DatosReporte): P
   })))
 
   const buffer = await wb.xlsx.writeBuffer()
-  descargarBlob(
-    new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `informe-conciliacion-${hoy()}.xlsx`,
-  )
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  descargarBlob(blob, `informe-conciliacion-${hoy()}.xlsx`)
+  return blob
 }
 
 function agregarHoja(
@@ -103,7 +102,7 @@ function descargarBlob(blob: Blob, nombre: string): void {
 }
 
 /** Exporta un informe en PDF con resumen ejecutivo y detalle de no conciliadas. */
-export async function exportarPDF({ transacciones, reglas, codigos }: DatosReporte): Promise<void> {
+export async function exportarPDF({ transacciones, reglas, codigos }: DatosReporte): Promise<Blob> {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
@@ -181,7 +180,9 @@ export async function exportarPDF({ transacciones, reglas, codigos }: DatosRepor
     columnStyles: { 2: { cellWidth: 60 } },
   })
 
-  doc.save(`informe-conciliacion-${hoy()}.pdf`)
+  const blob = doc.output('blob')
+  descargarBlob(blob, `informe-conciliacion-${hoy()}.pdf`)
+  return blob
 }
 
 function hoy(): string {

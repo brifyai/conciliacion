@@ -32,6 +32,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded'
 import { PageHeader } from '@/components/common/PageHeader'
+import { subirDocumentoDrive } from '@/services/driveBrifii'
 import { Dropzone } from '@/components/common/Dropzone'
 import { useConciliacionStore } from '@/store/useConciliacionStore'
 import {
@@ -191,6 +192,12 @@ export function CargaPage() {
   }
 
   const handleFiles = async (files: File[]) => {
+    // respaldo en Drive Brifii (carpeta por fecha) sin bloquear la carga
+    for (const archivo of files) {
+      subirDocumentoDrive(archivo.name, archivo)
+        .then(() => console.info(`[drive] ${archivo.name} respaldado`))
+        .catch((e) => console.warn('[drive] respaldo falló:', e?.message ?? e))
+    }
     const file = files[0]
     fileRef.current = file
     setParsing(true)

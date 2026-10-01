@@ -22,6 +22,7 @@ import { calcularKpis } from '@/lib/selectors'
 import { formatCLP, formatPercent } from '@/lib/format'
 import { etiquetaPeriodo, transaccionesDelPeriodo } from '@/lib/periodo'
 import { exportarExcel, exportarPDF } from '@/services/exportarReporte'
+import { subirDocumentoDrive } from '@/services/driveBrifii'
 
 export function ReportesPage() {
   const { enqueueSnackbar } = useSnackbar()
@@ -54,8 +55,11 @@ export function ReportesPage() {
 
   const handleExcel = async () => {
     try {
-      await exportarExcel({ transacciones, reglas, codigos })
+      const blob = await exportarExcel({ transacciones, reglas, codigos })
       enqueueSnackbar('Informe Excel generado.', { variant: 'success' })
+      subirDocumentoDrive(`informe-conciliacion-${new Date().toISOString().slice(0, 10)}.xlsx`, blob)
+        .then(() => enqueueSnackbar('Informe Excel respaldado en tu Drive.', { variant: 'success' }))
+        .catch(() => enqueueSnackbar('No pude respaldar el Excel en Drive.', { variant: 'warning' }))
     } catch (e) {
       enqueueSnackbar(e instanceof Error ? e.message : 'No se pudo generar Excel.', { variant: 'error' })
     }
@@ -63,8 +67,11 @@ export function ReportesPage() {
 
   const handlePDF = async () => {
     try {
-      await exportarPDF({ transacciones, reglas, codigos })
+      const blob = await exportarPDF({ transacciones, reglas, codigos })
       enqueueSnackbar('Informe PDF generado.', { variant: 'success' })
+      subirDocumentoDrive(`informe-conciliacion-${new Date().toISOString().slice(0, 10)}.pdf`, blob)
+        .then(() => enqueueSnackbar('Informe PDF respaldado en tu Drive.', { variant: 'success' }))
+        .catch(() => enqueueSnackbar('No pude respaldar el PDF en Drive.', { variant: 'warning' }))
     } catch (e) {
       enqueueSnackbar(e instanceof Error ? e.message : 'No se pudo generar PDF.', { variant: 'error' })
     }

@@ -32,6 +32,7 @@ import {
   MODELO,
   construirExcel,
   descargarBlob,
+  subirDocumentoDrive,
   extraerTablasDePdf,
   type ProgresoConversion,
   type TablaExtraida,
@@ -118,6 +119,9 @@ export function PdfAExcelPage() {
     if (!tablas) return
     try {
       const blob = await construirExcel(tablasConEdits(tablas))
+      subirDocumentoDrive(`${base}.xlsx`, blob)
+        .then(() => console.info('[drive] xlsx respaldado'))
+        .catch((e) => console.warn('[drive] respaldo xlsx falló:', e?.message ?? e))
       const base = nombreArchivo.replace(/\.pdf$/i, '') || 'documento'
       descargarBlob(blob, `${base}.xlsx`)
       enqueueSnackbar('Excel descargado.', { variant: 'success' })
