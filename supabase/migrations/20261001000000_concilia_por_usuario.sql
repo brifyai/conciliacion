@@ -70,6 +70,13 @@ drop trigger if exists on_auth_user_created on auth.users;
 
 -- Quitar de la organización principal a todos menos la cuenta de servicio
 -- (así nadie ve el dataset legacy salvo brifyaimaster).
+
+-- ⚠️ Owner de las tablas de organización → postgres: sin esto, la creación
+-- automática del workspace dentro de current_organization_id() (security
+-- definer) choca con el RLS de estas tablas y los INSERTS del usuario
+-- fallan con 42501 (visto en vivo 2026-10-01). Idempotente.
+alter table public.organizations owner to postgres;
+alter table public.organization_members owner to postgres;
 delete from public.organization_members om
 using auth.users u
 where om.user_id = u.id
