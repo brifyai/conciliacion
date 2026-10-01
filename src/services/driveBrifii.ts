@@ -31,6 +31,7 @@ export async function subirDocumentoDrive(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ nombre, base64, periodo }),

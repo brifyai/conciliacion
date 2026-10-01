@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Box, LinearProgress, Stack } from '@mui/material'
-import { Outlet, useSearchParams } from 'react-router-dom'
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
  * que cada usuario opere conciliaBK con su identidad de Brifii.
  */
 function SsoBridge() {
+  const navigate = useNavigate()
   useEffect(() => {
     const ORIGEN_PANEL = 'https://brifii-servicios.aintelligence.cl'
     const uidDeJwt = (jwt: string): string => {
@@ -30,18 +31,26 @@ function SsoBridge() {
         type?: string
         access_token?: string
         refresh_token?: string
+        ruta?: string
+      }
+      if (d?.type === 'concilia-navegar' && d.ruta) {
+        navigate(d.ruta)
+        return
       }
       if (d?.type !== 'brifii-sesion' || !d.access_token || !d.refresh_token) {
         return
       }
-      // si ya operamos con ESA identidad, no hacer nada (evita el bucle
-      // de recargas: adoptar → reload → adoptar → reload …)
+      const tokens = { access_token: d.access_token, refresh_token: d.refresh_token }
       const { data: sesData } = await supabase.auth.getSession()
-      if (sesData.session?.user?.id === uidDeJwt(d.access_token)) return
-      await supabase.auth.setSession({
-        access_token: d.access_token,
-        refresh_token: d.refresh_token,
-      })
+      // misma identidad → refrescar tokens locales en silencio (sin reload
+      // ni rotación: el panel es quien refresca contra GoTrue)
+      if (sesData.session?.user?.id === uidDeJwt(d.access_token)) {
+        await supabase.auth.setSession(tokens)
+        return
+      }
+      // identidad distinta (primer ingreso / cambio de cuenta) → adoptar y
+      // recargar una sola vez
+      await supabase.auth.setSession(tokens)
       window.location.reload()
     }
     window.addEventListener('message', aplicar)

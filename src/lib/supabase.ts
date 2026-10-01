@@ -12,10 +12,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY')
 }
 
+// En modo embebido (?embed=1 desde el panel Brifii) el refresh token lo
+// rota el PANEL (es el dueño de la sesión): aquí autoRefreshToken va OFF
+// y los tokens frescos llegan por postMessage — evita el conflicto de
+// rotación que invalidaba la sesión del panel.
+const embebido = window.location.search.includes('embed=1')
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
-    autoRefreshToken: true,
+    autoRefreshToken: !embebido,
     detectSessionInUrl: true,
   },
 })
