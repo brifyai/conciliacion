@@ -15,7 +15,16 @@ import { supabase } from '@/lib/supabase'
 function SsoBridge() {
   useEffect(() => {
     const ORIGEN_PANEL = 'https://brifii-servicios.aintelligence.cl'
-    function aplicar(e: MessageEvent) {
+    const uidDeJwt = (jwt: string): string => {
+      try {
+        const payload = JSON.parse(
+          atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+        return (payload as { sub?: string }).sub ?? ''
+      } catch (_) {
+        return ''
+      }
+    }
+    async function aplicar(e: MessageEvent) {
       if (e.origin !== ORIGEN_PANEL) return
       const d = e.data as {
         type?: string
@@ -25,12 +34,15 @@ function SsoBridge() {
       if (d?.type !== 'brifii-sesion' || !d.access_token || !d.refresh_token) {
         return
       }
-      supabase.auth
-        .setSession({
-          access_token: d.access_token,
-          refresh_token: d.refresh_token,
-        })
-        .then(() => window.location.reload())
+      // si ya operamos con ESA identidad, no hacer nada (evita el bucle
+      // de recargas: adoptar → reload → adoptar → reload …)
+      const { data: sesData } = await supabase.auth.getSession()
+      if (sesData.session?.user?.id === uidDeJwt(d.access_token)) return
+      await supabase.auth.setSession({
+        access_token: d.access_token,
+        refresh_token: d.refresh_token,
+      })
+      window.location.reload()
     }
     window.addEventListener('message', aplicar)
     window.parent.postMessage({ type: 'concilia-listo' }, ORIGEN_PANEL)
