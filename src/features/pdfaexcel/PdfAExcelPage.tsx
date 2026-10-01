@@ -32,11 +32,11 @@ import {
   MODELO,
   construirExcel,
   descargarBlob,
-  subirDocumentoDrive,
   extraerTablasDePdf,
   type ProgresoConversion,
   type TablaExtraida,
 } from '@/services/pdfAExcel'
+import { subirDocumentoDrive } from '@/services/driveBrifii'
 import type { Moneda } from '@/services/pdfCartola'
 
 const ETAPA_TEXTO: Record<ProgresoConversion['etapa'], string> = {
@@ -119,10 +119,12 @@ export function PdfAExcelPage() {
     if (!tablas) return
     try {
       const blob = await construirExcel(tablasConEdits(tablas))
+      const base = nombreArchivo.replace(/\.pdf$/i, '') || 'documento'
       subirDocumentoDrive(`${base}.xlsx`, blob)
         .then(() => console.info('[drive] xlsx respaldado'))
-        .catch((e) => console.warn('[drive] respaldo xlsx falló:', e?.message ?? e))
-      const base = nombreArchivo.replace(/\.pdf$/i, '') || 'documento'
+        .catch((e: unknown) =>
+          console.warn('[drive] respaldo xlsx falló:',
+            e instanceof Error ? e.message : e))
       descargarBlob(blob, `${base}.xlsx`)
       enqueueSnackbar('Excel descargado.', { variant: 'success' })
     } catch (e) {
